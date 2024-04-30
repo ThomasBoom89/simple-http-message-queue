@@ -1,0 +1,6 @@
+services:
+  application:
+    build:
+      target: Production
+    container_name: application
+    restart: always

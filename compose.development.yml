@@ -1,0 +1,33 @@
+services:
+  application:
+    container_name: application-development
+    env_file:
+      - .env.dev
+    build:
+      target: Development
+#    ports:
+#      - "3000:3000"
+    volumes:
+      - ./src:/app/src
+      - ./internal:/app/internal
+#      - ./pkg:/app/pkg
+      - ./.air.toml:/app/.air.toml
+      - ./go.mod:/app/go.mod
+      - ./go.sum:/app/go.sum
+  application-debug:
+    container_name: application-development-debug
+    env_file:
+      - .env.dev
+    build:
+      target: Development
+    ports:
+#      - "3001:3000"
+      - "2345:2345"
+    volumes:
+      - ./src:/app/src
+      - ./internal:/app/internal
+#      - ./pkg:/app/pkg
+      - ./.air.debug.toml:/app/.air.toml
+      - ./go.mod:/app/go.mod
+      - ./go.sum:/app/go.sum
+
