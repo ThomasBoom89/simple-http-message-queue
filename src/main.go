@@ -1,22 +1,36 @@
 package main
 
 import (
-	"fmt"
 	"github.com/ThomasBoom89/simple-http-message-queue/internal"
-	"time"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
 func main() {
+	app := fiber.New()
+	app.Use(logger.New())
+	app.Use(cors.New())
+
 	queue := internal.NewQueue()
 
-	queue.Enqueue("a")
-	queue.Enqueue("b")
-	queue.Enqueue("c")
+	app.Post("/publish", func(c *fiber.Ctx) error {
+		queue.Enqueue(string(c.Body()))
 
-	for {
-		//if !queue.IsEmpty() {
-		fmt.Println(queue.Dequeue())
-		//}
-		time.Sleep(2 * time.Second)
+		return c.SendStatus(fiber.StatusOK)
+	})
+
+	app.Get("/subscribe", func(c *fiber.Ctx) error {
+		element, err := queue.Dequeue()
+		if err != nil {
+			return c.SendString("")
+		}
+
+		return c.SendString(element)
+	})
+
+	err := app.Listen(":3000")
+	if err != nil {
+		panic(err)
 	}
 }

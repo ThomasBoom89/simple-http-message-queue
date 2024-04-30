@@ -5,8 +5,8 @@ services:
       - .env.dev
     build:
       target: Development
-#    ports:
-#      - "3000:3000"
+    ports:
+      - "3002:3000"
     volumes:
       - ./src:/app/src
       - ./internal:/app/internal
@@ -21,7 +21,7 @@ services:
     build:
       target: Development
     ports:
-#      - "3001:3000"
+      - "3003:3000"
       - "2345:2345"
     volumes:
       - ./src:/app/src
