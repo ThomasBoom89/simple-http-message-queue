@@ -3,7 +3,7 @@ FROM golang:1.22-alpine3.19 AS Builder
 WORKDIR /app
 COPY . .
 
-#RUN go get -d ./...
+RUN go get -d ./...
 RUN CGO_ENABLED=0 GOOS=linux GARCH=amd64 go build -o application ./src/main.go
 
 FROM scratch AS Production
