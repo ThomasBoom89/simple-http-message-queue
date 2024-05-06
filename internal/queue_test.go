@@ -6,7 +6,7 @@ import (
 )
 
 func TestQueue(t *testing.T) {
-	concreteQueues := []Queue{NewLinkedListQueue(), NewSliceQueue()}
+	concreteQueues := []Queue[string]{NewLinkedListQueue[string](), NewSliceQueue[string]()}
 
 	for _, queue := range concreteQueues {
 		if queue.IsEmpty() == false {
@@ -40,7 +40,7 @@ func TestQueue(t *testing.T) {
 }
 
 func BenchmarkSliceQueue(b *testing.B) {
-	queue := NewSliceQueue()
+	queue := NewSliceQueue[string]()
 	for i := 0; i < b.N; i++ {
 		val := strconv.Itoa(i)
 		queue.Enqueue(val)
@@ -52,7 +52,7 @@ func BenchmarkSliceQueue(b *testing.B) {
 }
 
 func BenchmarkLinkedListQueue(b *testing.B) {
-	queue := NewLinkedListQueue()
+	queue := NewLinkedListQueue[string]()
 	for i := 0; i < b.N; i++ {
 		val := strconv.Itoa(i)
 		queue.Enqueue(val)

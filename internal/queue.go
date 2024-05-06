@@ -1,32 +1,35 @@
 package internal
 
-import "errors"
+import (
+	"errors"
+	"github.com/gofiber/contrib/websocket"
+)
 
-type Queue interface {
+type Queue[T string | *websocket.Conn] interface {
 	IsEmpty() bool
-	Enqueue(string)
-	Dequeue() (string, error)
+	Enqueue(T)
+	Dequeue() (T, error)
 }
 
-type SliceQueue struct {
-	data []string
+type SliceQueue[T string | *websocket.Conn] struct {
+	data []T
 }
 
-func NewSliceQueue() *SliceQueue {
-	return &SliceQueue{data: nil}
+func NewSliceQueue[T string | *websocket.Conn]() *SliceQueue[T] {
+	return &SliceQueue[T]{data: nil}
 }
 
-func (S *SliceQueue) IsEmpty() bool {
+func (S *SliceQueue[T]) IsEmpty() bool {
 	return len(S.data) == 0
 }
 
-func (S *SliceQueue) Enqueue(element string) {
+func (S *SliceQueue[T]) Enqueue(element T) {
 	S.data = append(S.data, element)
 }
 
-func (S *SliceQueue) Dequeue() (string, error) {
+func (S *SliceQueue[T]) Dequeue() (T, error) {
 	if S.IsEmpty() {
-		return "", errors.New("queue is empty")
+		return *new(T), errors.New("messageQueue is empty")
 	}
 	element := S.data[0]
 	S.data = S.data[1:]
@@ -34,30 +37,30 @@ func (S *SliceQueue) Dequeue() (string, error) {
 	return element, nil
 }
 
-type LinkedList struct {
-	head *Node
-	tail *Node
+type LinkedList[T string | *websocket.Conn] struct {
+	head *Node[T]
+	tail *Node[T]
 }
 
-type Node struct {
-	data string
-	next *Node
+type Node[T string | *websocket.Conn] struct {
+	data T
+	next *Node[T]
 }
 
-type LinkedListQueue struct {
-	data *LinkedList
+type LinkedListQueue[T string | *websocket.Conn] struct {
+	data *LinkedList[T]
 }
 
-func NewLinkedListQueue() *LinkedListQueue {
-	return &LinkedListQueue{data: &LinkedList{head: nil, tail: nil}}
+func NewLinkedListQueue[T string | *websocket.Conn]() *LinkedListQueue[T] {
+	return &LinkedListQueue[T]{data: &LinkedList[T]{head: nil, tail: nil}}
 }
 
-func (L *LinkedListQueue) IsEmpty() bool {
+func (L *LinkedListQueue[T]) IsEmpty() bool {
 	return L.data.head == nil
 }
 
-func (L *LinkedListQueue) Enqueue(element string) {
-	node := &Node{data: element}
+func (L *LinkedListQueue[T]) Enqueue(element T) {
+	node := &Node[T]{data: element}
 	if L.IsEmpty() {
 		L.data.head = node
 	}
@@ -68,9 +71,9 @@ func (L *LinkedListQueue) Enqueue(element string) {
 	L.data.tail = node
 }
 
-func (L *LinkedListQueue) Dequeue() (string, error) {
+func (L *LinkedListQueue[T]) Dequeue() (T, error) {
 	if L.IsEmpty() {
-		return "", errors.New("queue is empty")
+		return *new(T), errors.New("messageQueue is empty")
 	}
 	node := L.data.head
 	if node.next == nil {
