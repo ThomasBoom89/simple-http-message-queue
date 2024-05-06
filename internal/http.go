@@ -4,10 +4,10 @@ import "github.com/gofiber/fiber/v2"
 
 type HTTP struct {
 	app   *fiber.App
-	queue Queue
+	queue Queue[string]
 }
 
-func NewHTTP(app *fiber.App, queue Queue) *HTTP {
+func NewHTTP(app *fiber.App, queue Queue[string]) *HTTP {
 	return &HTTP{app: app, queue: queue}
 }
 

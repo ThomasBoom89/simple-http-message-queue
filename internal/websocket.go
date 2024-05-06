@@ -8,24 +8,26 @@ import (
 )
 
 type WebSocket struct {
-	app            *fiber.App
-	queue          Queue
-	connectionPool map[*websocket.Conn]bool
-	registerPool   chan *websocket.Conn
-	unregisterPool chan *websocket.Conn
+	app             *fiber.App
+	messageQueue    Queue[string]
+	connectionQueue Queue[*websocket.Conn]
+	connectionPool  map[*websocket.Conn]bool
+	registerPool    chan *websocket.Conn
+	unregisterPool  chan *websocket.Conn
 }
 
-func NewWebSocket(app *fiber.App, queue Queue) *WebSocket {
+func NewWebSocket(app *fiber.App, messageQueue Queue[string], connectionQueue Queue[*websocket.Conn]) *WebSocket {
 	connectionPool := make(map[*websocket.Conn]bool)
 	registerPool := make(chan *websocket.Conn, 10)
 	unregisterPool := make(chan *websocket.Conn, 10)
 
 	return &WebSocket{
-		app:            app,
-		queue:          queue,
-		connectionPool: connectionPool,
-		registerPool:   registerPool,
-		unregisterPool: unregisterPool,
+		app:             app,
+		messageQueue:    messageQueue,
+		connectionQueue: connectionQueue,
+		connectionPool:  connectionPool,
+		registerPool:    registerPool,
+		unregisterPool:  unregisterPool,
 	}
 }
 
@@ -45,12 +47,15 @@ func (W *WebSocket) SetupRoutes() {
 		W.registerPool <- c
 		// read messages
 		for {
-			_, _, err := c.ReadMessage()
+			_, message, err := c.ReadMessage()
 			if err != nil {
 				if websocket.IsCloseError(err) || websocket.IsUnexpectedCloseError(err) {
 					log.Debug(err)
 				}
 				return
+			}
+			if string(message) == "next" {
+				W.connectionQueue.Enqueue(c)
 			}
 		}
 	}))
@@ -59,17 +64,26 @@ func (W *WebSocket) SetupRoutes() {
 
 func (W *WebSocket) sendMessagesToClients() {
 	for {
-		time.Sleep(1 * time.Second)
-		if len(W.connectionPool) == 0 {
+		time.Sleep(10 * time.Millisecond)
+		if len(W.connectionPool) == 0 || W.connectionQueue.IsEmpty() || W.messageQueue.IsEmpty() {
 			continue
 		}
-		message, err := W.queue.Dequeue()
-		if err != nil {
+		connection, err := W.connectionQueue.Dequeue()
+		if _, ok := W.connectionPool[connection]; ok == false || err != nil {
 			continue
 		}
 
-		for connection, _ := range W.connectionPool {
-			connection.WriteMessage(websocket.TextMessage, []byte(message))
+		message, err := W.messageQueue.Dequeue()
+		if err != nil {
+			W.connectionQueue.Enqueue(connection)
+			continue
+		}
+
+		err = connection.WriteMessage(websocket.TextMessage, []byte(message))
+		if err != nil {
+			W.connectionQueue.Enqueue(connection)
+			W.messageQueue.Enqueue(message)
+			return
 		}
 	}
 }
