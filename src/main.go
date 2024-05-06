@@ -15,7 +15,7 @@ func main() {
 	app.Use(logger.New())
 	app.Use(cors.New())
 
-	queue := internal.NewQueue()
+	queue := internal.NewLinkedListQueue()
 
 	app.Post("/publish", func(c *fiber.Ctx) error {
 		queue.Enqueue(string(c.Body()))
