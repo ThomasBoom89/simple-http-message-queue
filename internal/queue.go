@@ -2,28 +2,82 @@ package internal
 
 import "errors"
 
-type Queue struct {
+type Queue interface {
+	IsEmpty() bool
+	Enqueue(string)
+	Dequeue() (string, error)
+}
+
+type SliceQueue struct {
 	data []string
 }
 
-func NewQueue() *Queue {
-	return &Queue{data: nil}
+func NewSliceQueue() *SliceQueue {
+	return &SliceQueue{data: nil}
 }
 
-func (Q *Queue) IsEmpty() bool {
-	return len(Q.data) == 0
+func (S *SliceQueue) IsEmpty() bool {
+	return len(S.data) == 0
 }
 
-func (Q *Queue) Enqueue(element string) {
-	Q.data = append(Q.data, element)
+func (S *SliceQueue) Enqueue(element string) {
+	S.data = append(S.data, element)
 }
 
-func (Q *Queue) Dequeue() (string, error) {
-	if Q.IsEmpty() {
+func (S *SliceQueue) Dequeue() (string, error) {
+	if S.IsEmpty() {
 		return "", errors.New("queue is empty")
 	}
-	element := Q.data[0]
-	Q.data = Q.data[1:]
+	element := S.data[0]
+	S.data = S.data[1:]
 
 	return element, nil
+}
+
+type LinkedList struct {
+	head *Node
+	tail *Node
+}
+
+type Node struct {
+	data string
+	next *Node
+}
+
+type LinkedListQueue struct {
+	data *LinkedList
+}
+
+func NewLinkedListQueue() *LinkedListQueue {
+	return &LinkedListQueue{data: &LinkedList{head: nil, tail: nil}}
+}
+
+func (L *LinkedListQueue) IsEmpty() bool {
+	return L.data.head == nil
+}
+
+func (L *LinkedListQueue) Enqueue(element string) {
+	node := &Node{data: element}
+	if L.IsEmpty() {
+		L.data.head = node
+	}
+	tail := L.data.tail
+	if tail != nil {
+		tail.next = node
+	}
+	L.data.tail = node
+}
+
+func (L *LinkedListQueue) Dequeue() (string, error) {
+	if L.IsEmpty() {
+		return "", errors.New("queue is empty")
+	}
+	node := L.data.head
+	if node.next == nil {
+		L.data.tail = nil
+	}
+	L.data.head = node.next
+	node.next = nil
+
+	return node.data, nil
 }
