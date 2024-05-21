@@ -4,7 +4,7 @@ import (
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
-	"time"
+	"runtime"
 )
 
 type WebSocket struct {
@@ -58,13 +58,13 @@ func (W *WebSocket) SetupRoutes() {
 				W.connectionQueue.Enqueue(c)
 			}
 		}
-	}))
-
+	}, websocket.Config{RecoverHandler: GetWebsocketPanicHandler()}))
 }
 
 func (W *WebSocket) sendMessagesToClients() {
+	defer RecoverGoroutine(W.sendMessagesToClients)
 	for {
-		time.Sleep(10 * time.Millisecond)
+		runtime.Gosched()
 		if len(W.connectionPool) == 0 || W.connectionQueue.IsEmpty() || W.messageQueue.IsEmpty() {
 			continue
 		}
@@ -89,6 +89,7 @@ func (W *WebSocket) sendMessagesToClients() {
 }
 
 func (W *WebSocket) handleConnectionRegisterUnregister() {
+	defer RecoverGoroutine(W.handleConnectionRegisterUnregister)
 	for {
 		select {
 		case connection := <-W.registerPool:
