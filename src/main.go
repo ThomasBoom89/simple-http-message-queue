@@ -11,6 +11,12 @@ import (
 
 func main() {
 
+	queue := internal.NewLinkedListQueue[string]()
+	storage := internal.NewStorage(queue)
+	storage.Load()
+	defer internal.SaveOnPanic(storage)
+	go internal.HandleOsSignal(storage)
+
 	app := fiber.New(fiber.Config{
 		// Override default error handler
 		ErrorHandler: func(ctx *fiber.Ctx, err error) error {
@@ -22,7 +28,6 @@ func main() {
 	app.Use(logger.New())
 	app.Use(cors.New())
 
-	queue := internal.NewLinkedListQueue[string]()
 	http := internal.NewHTTP(app, queue)
 	http.SetupRoutes()
 

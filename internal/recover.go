@@ -14,6 +14,13 @@ func GetWebsocketPanicHandler() func(conn *websocket.Conn) {
 	}
 }
 
+func SaveOnPanic(storage *Storage) {
+	if err := recover(); err != nil {
+		storage.Save()
+		HandlePanic(err)
+	}
+}
+
 func RecoverGoroutine(function func()) {
 	if err := recover(); err != nil {
 		HandlePanic(err)
