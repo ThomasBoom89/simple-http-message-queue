@@ -6,8 +6,9 @@ import (
 )
 
 type TopicManager struct {
-	data       map[Topic]Queue[Message]
-	connection map[Topic]Queue[*websocket.Conn]
+	messageQueue    map[Topic]Queue[Message]
+	connectionQueue map[Topic]Queue[*websocket.Conn]
+	connections     map[Topic]map[*websocket.Conn]bool
 }
 
 type Topic string
@@ -15,17 +16,18 @@ type Message []byte
 
 func NewTopicManager() *TopicManager {
 	return &TopicManager{
-		data:       make(map[Topic]Queue[Message]),
-		connection: make(map[Topic]Queue[*websocket.Conn]),
+		messageQueue:    make(map[Topic]Queue[Message]),
+		connectionQueue: make(map[Topic]Queue[*websocket.Conn]),
+		connections:     map[Topic]map[*websocket.Conn]bool{},
 	}
 }
 
 func (T *TopicManager) GetNextMessage(topic Topic) (Message, error) {
-	if _, ok := T.data[topic]; !ok {
+	if _, ok := T.messageQueue[topic]; !ok {
 		return nil, errors.New("topic not found")
 	}
 
-	message, err := T.data[topic].Dequeue()
+	message, err := T.messageQueue[topic].Dequeue()
 	if err != nil {
 		return nil, err
 	}
@@ -34,18 +36,75 @@ func (T *TopicManager) GetNextMessage(topic Topic) (Message, error) {
 }
 
 func (T *TopicManager) AddMessage(topic Topic, message Message) {
-	if _, ok := T.data[topic]; !ok {
-		T.data[topic] = NewLinkedListQueue[Message]()
+	if _, ok := T.messageQueue[topic]; !ok {
+		T.messageQueue[topic] = NewLinkedListQueue[Message]()
 	}
-	T.data[topic].Enqueue(message)
+	T.messageQueue[topic].Enqueue(message)
 }
 
 func (T *TopicManager) AddConnection(topic Topic, conn *websocket.Conn) {
-
+	if _, ok := T.connections[topic]; !ok {
+		T.connections[topic] = map[*websocket.Conn]bool{conn: true}
+	} else {
+		T.connections[topic][conn] = true
+	}
 }
 
 func (T *TopicManager) RemoveConnection(topic Topic, conn *websocket.Conn) {
-	// todo: this will not work, we do not know topic outside, maybe we have to scan for connection inside all topic
+	if _, ok := T.connections[topic]; !ok {
+		return
+	}
+	delete(T.connections[topic], conn)
 }
 
-//func (T *TopicManager) GetTopics() []Topic {}
+func (T *TopicManager) GetTopics() []Topic {
+	topics := make([]Topic, 0)
+	for topic := range T.messageQueue {
+		topics = append(topics, topic)
+	}
+
+	return topics
+}
+
+func (T *TopicManager) GetNextConnection(topic Topic) (*websocket.Conn, error) {
+	if T.topicNotReady(topic) {
+		return nil, errors.New("topic not found or no data")
+	}
+
+	connection, err := T.connectionQueue[topic].Dequeue()
+	if err != nil {
+		return nil, err
+	}
+	return connection, nil
+}
+
+func (T *TopicManager) ConnectionExists(topic Topic, connection *websocket.Conn) bool {
+	if _, ok := T.connections[topic]; !ok {
+		return false
+	}
+	if _, ok := T.connections[topic][connection]; !ok {
+		return false
+	}
+
+	return true
+}
+
+func (T *TopicManager) AddConnectionToQueue(topic Topic, connection *websocket.Conn) {
+	if _, ok := T.connectionQueue[topic]; !ok {
+		T.connectionQueue[topic] = NewLinkedListQueue[*websocket.Conn]()
+	}
+	T.connectionQueue[topic].Enqueue(connection)
+}
+
+func (T *TopicManager) topicNotReady(topic Topic) bool {
+	if _, ok := T.connections[topic]; !ok {
+		return true
+	}
+	if _, ok := T.connectionQueue[topic]; !ok {
+		return true
+	}
+	if _, ok := T.messageQueue[topic]; !ok {
+		return true
+	}
+	return T.messageQueue[topic].IsEmpty() || T.connectionQueue[topic].IsEmpty() || len(T.connections[topic]) == 0
+}
