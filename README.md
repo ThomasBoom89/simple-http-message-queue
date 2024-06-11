@@ -18,9 +18,9 @@ Then start the docker container via
 
 ## Usage
 
-You can publish messages with http POST on /publish message must be sent in plaintext
+You can publish messages with http POST on /{topic}/publish message must be sent in plaintext
 
-To receive messages you can http GET on /subscribe or connect via websocket to /ws
+To receive messages you can http GET on /{topic}/subscribe or connect via websocket to /ws
 On the websocket you need to send "next" in plaintext to get a new message
 
 ## License
