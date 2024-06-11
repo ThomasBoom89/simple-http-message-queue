@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-
+	topicManager := internal.NewTopicManager()
 	queue := internal.NewLinkedListQueue[string]()
 	storage := internal.NewStorage(queue)
 	storage.Load()
@@ -28,7 +28,7 @@ func main() {
 	app.Use(logger.New())
 	app.Use(cors.New())
 
-	http := internal.NewHTTP(app, queue)
+	http := internal.NewHTTP(app, topicManager)
 	http.SetupRoutes()
 
 	queue2 := internal.NewLinkedListQueue[*websocket2.Conn]()
