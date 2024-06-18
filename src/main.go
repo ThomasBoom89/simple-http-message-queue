@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/ThomasBoom89/simple-http-message-queue/internal"
-	websocket2 "github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -10,9 +9,8 @@ import (
 )
 
 func main() {
-
-	queue := internal.NewLinkedListQueue[string]()
-	storage := internal.NewStorage(queue)
+	topicManager := internal.NewTopicManager()
+	storage := internal.NewStorage(topicManager)
 	storage.Load()
 	defer internal.SaveOnPanic(storage)
 	go internal.HandleOsSignal(storage)
@@ -28,11 +26,10 @@ func main() {
 	app.Use(logger.New())
 	app.Use(cors.New())
 
-	http := internal.NewHTTP(app, queue)
+	http := internal.NewHTTP(app, topicManager)
 	http.SetupRoutes()
 
-	queue2 := internal.NewLinkedListQueue[*websocket2.Conn]()
-	websocket := internal.NewWebSocket(app, queue, queue2)
+	websocket := internal.NewWebSocket(app, topicManager)
 	websocket.SetupRoutes()
 
 	err := app.Listen(":3000")

@@ -4,3 +4,5 @@ services:
       target: Production
     container_name: application
     restart: always
+    volumes:
+      - ./data:/app/data

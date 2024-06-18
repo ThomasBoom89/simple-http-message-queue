@@ -1,29 +1,35 @@
 package internal
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/utils"
+)
 
 type HTTP struct {
-	app   *fiber.App
-	queue Queue[string]
+	app          *fiber.App
+	topicManager *TopicManager
 }
 
-func NewHTTP(app *fiber.App, queue Queue[string]) *HTTP {
-	return &HTTP{app: app, queue: queue}
+func NewHTTP(app *fiber.App, topicManager *TopicManager) *HTTP {
+	return &HTTP{app: app, topicManager: topicManager}
 }
 
 func (H *HTTP) SetupRoutes() {
-	H.app.Post("/publish", func(c *fiber.Ctx) error {
-		H.queue.Enqueue(string(c.Body()))
+	H.app.Post("/:topic/publish", func(c *fiber.Ctx) error {
+		topic := Topic(c.Params("topic"))
+		body := utils.CopyBytes(c.Body())
+		H.topicManager.AddMessage(topic, body)
 
 		return c.SendStatus(fiber.StatusOK)
 	})
 
-	H.app.Get("/subscribe", func(c *fiber.Ctx) error {
-		element, err := H.queue.Dequeue()
+	H.app.Get("/:topic/subscribe", func(c *fiber.Ctx) error {
+		topic := Topic(c.Params("topic"))
+		message, err := H.topicManager.GetNextMessage(topic)
 		if err != nil {
-			return c.SendString("")
+			return c.Send([]byte{})
 		}
 
-		return c.SendString(element)
+		return c.Send(message)
 	})
 }

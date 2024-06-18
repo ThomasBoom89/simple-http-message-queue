@@ -4,11 +4,12 @@ import (
 	"github.com/gofiber/fiber/v2/log"
 	"os"
 	"os/signal"
+	"syscall"
 )
 
 func HandleOsSignal(storage *Storage) {
 	sigchan := make(chan os.Signal, 1)
-	signals := []os.Signal{os.Kill, os.Interrupt}
+	signals := []os.Signal{os.Kill, os.Interrupt, syscall.SIGTERM}
 	signal.Notify(sigchan, signals...)
 	<-sigchan
 

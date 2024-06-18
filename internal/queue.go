@@ -5,17 +5,17 @@ import (
 	"github.com/gofiber/contrib/websocket"
 )
 
-type Queue[T string | *websocket.Conn] interface {
+type Queue[T string | *websocket.Conn | Message | []byte] interface {
 	IsEmpty() bool
 	Enqueue(T)
 	Dequeue() (T, error)
 }
 
-type SliceQueue[T string | *websocket.Conn] struct {
+type SliceQueue[T string | *websocket.Conn | Message | []byte] struct {
 	data []T
 }
 
-func NewSliceQueue[T string | *websocket.Conn]() *SliceQueue[T] {
+func NewSliceQueue[T string | *websocket.Conn | Message | []byte]() *SliceQueue[T] {
 	return &SliceQueue[T]{data: nil}
 }
 
@@ -37,21 +37,21 @@ func (S *SliceQueue[T]) Dequeue() (T, error) {
 	return element, nil
 }
 
-type LinkedList[T string | *websocket.Conn] struct {
+type LinkedList[T string | *websocket.Conn | Message | []byte] struct {
 	head *Node[T]
 	tail *Node[T]
 }
 
-type Node[T string | *websocket.Conn] struct {
+type Node[T string | *websocket.Conn | Message | []byte] struct {
 	data T
 	next *Node[T]
 }
 
-type LinkedListQueue[T string | *websocket.Conn] struct {
+type LinkedListQueue[T string | *websocket.Conn | Message | []byte] struct {
 	data *LinkedList[T]
 }
 
-func NewLinkedListQueue[T string | *websocket.Conn]() *LinkedListQueue[T] {
+func NewLinkedListQueue[T string | *websocket.Conn | Message | []byte]() *LinkedListQueue[T] {
 	return &LinkedListQueue[T]{data: &LinkedList[T]{head: nil, tail: nil}}
 }
 

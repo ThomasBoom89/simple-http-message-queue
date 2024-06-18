@@ -8,26 +8,26 @@ import (
 )
 
 type WebSocket struct {
-	app             *fiber.App
-	messageQueue    Queue[string]
-	connectionQueue Queue[*websocket.Conn]
-	connectionPool  map[*websocket.Conn]bool
-	registerPool    chan *websocket.Conn
-	unregisterPool  chan *websocket.Conn
+	app            *fiber.App
+	registerPool   chan *couple
+	unregisterPool chan *couple
+	topicManager   *TopicManager
 }
 
-func NewWebSocket(app *fiber.App, messageQueue Queue[string], connectionQueue Queue[*websocket.Conn]) *WebSocket {
-	connectionPool := make(map[*websocket.Conn]bool)
-	registerPool := make(chan *websocket.Conn, 10)
-	unregisterPool := make(chan *websocket.Conn, 10)
+type couple struct {
+	Connection *websocket.Conn
+	Topic      Topic
+}
+
+func NewWebSocket(app *fiber.App, topicManager *TopicManager) *WebSocket {
+	registerPool := make(chan *couple, 10)
+	unregisterPool := make(chan *couple, 10)
 
 	return &WebSocket{
-		app:             app,
-		messageQueue:    messageQueue,
-		connectionQueue: connectionQueue,
-		connectionPool:  connectionPool,
-		registerPool:    registerPool,
-		unregisterPool:  unregisterPool,
+		app:            app,
+		registerPool:   registerPool,
+		unregisterPool: unregisterPool,
+		topicManager:   topicManager,
 	}
 }
 
@@ -36,15 +36,20 @@ func (W *WebSocket) SetupRoutes() {
 	go W.sendMessagesToClients()
 	go W.handleConnectionRegisterUnregister()
 
-	W.app.Get("/ws", websocket.New(func(c *websocket.Conn) {
+	W.app.Get("/:topic/ws", websocket.New(func(c *websocket.Conn) {
+		topic := Topic(c.Params("topic"))
+		couple := &couple{
+			Connection: c,
+			Topic:      topic,
+		}
 		// unregister connection
 		defer func() {
-			W.unregisterPool <- c
+			W.unregisterPool <- couple
 			c.Close()
 		}()
 
 		// register connection
-		W.registerPool <- c
+		W.registerPool <- couple
 		// read messages
 		for {
 			_, message, err := c.ReadMessage()
@@ -55,7 +60,7 @@ func (W *WebSocket) SetupRoutes() {
 				return
 			}
 			if string(message) == "next" {
-				W.connectionQueue.Enqueue(c)
+				W.topicManager.AddConnectionToQueue(topic, c)
 			}
 		}
 	}, websocket.Config{RecoverHandler: GetWebsocketPanicHandler()}))
@@ -65,25 +70,27 @@ func (W *WebSocket) sendMessagesToClients() {
 	defer RecoverGoroutine(W.sendMessagesToClients)
 	for {
 		runtime.Gosched()
-		if len(W.connectionPool) == 0 || W.connectionQueue.IsEmpty() || W.messageQueue.IsEmpty() {
-			continue
-		}
-		connection, err := W.connectionQueue.Dequeue()
-		if _, ok := W.connectionPool[connection]; ok == false || err != nil {
-			continue
-		}
+		for _, topic := range W.topicManager.GetTopics() {
+			connection, err := W.topicManager.GetNextConnection(topic)
+			if err != nil {
+				continue
+			}
+			exists := W.topicManager.ConnectionExists(topic, connection)
+			if exists == false {
+				continue
+			}
 
-		message, err := W.messageQueue.Dequeue()
-		if err != nil {
-			W.connectionQueue.Enqueue(connection)
-			continue
-		}
+			message, err := W.topicManager.GetNextMessage(topic)
+			if err != nil {
+				W.topicManager.AddConnectionToQueue(topic, connection)
+				continue
+			}
 
-		err = connection.WriteMessage(websocket.TextMessage, []byte(message))
-		if err != nil {
-			W.connectionQueue.Enqueue(connection)
-			W.messageQueue.Enqueue(message)
-			return
+			err = connection.WriteMessage(websocket.TextMessage, message)
+			if err != nil {
+				W.topicManager.AddConnectionToQueue(topic, connection)
+				W.topicManager.AddMessage(topic, message)
+			}
 		}
 	}
 }
@@ -92,12 +99,12 @@ func (W *WebSocket) handleConnectionRegisterUnregister() {
 	defer RecoverGoroutine(W.handleConnectionRegisterUnregister)
 	for {
 		select {
-		case connection := <-W.registerPool:
-			W.connectionPool[connection] = true
+		case foo := <-W.registerPool:
+			W.topicManager.AddConnection(foo.Topic, foo.Connection)
 			log.Debug("connection registered")
 
-		case connection := <-W.unregisterPool:
-			delete(W.connectionPool, connection)
+		case foo := <-W.unregisterPool:
+			W.topicManager.RemoveConnection(foo.Topic, foo.Connection)
 			log.Debug("connection unregistered")
 		}
 	}
