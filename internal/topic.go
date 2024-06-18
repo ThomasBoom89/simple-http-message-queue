@@ -9,6 +9,7 @@ type TopicManager struct {
 	messageQueue    map[Topic]Queue[Message]
 	connectionQueue map[Topic]Queue[*websocket.Conn]
 	connections     map[Topic]map[*websocket.Conn]bool
+	topics          []Topic
 }
 
 type Topic string
@@ -38,6 +39,7 @@ func (T *TopicManager) GetNextMessage(topic Topic) (Message, error) {
 func (T *TopicManager) AddMessage(topic Topic, message Message) {
 	if _, ok := T.messageQueue[topic]; !ok {
 		T.messageQueue[topic] = NewLinkedListQueue[Message]()
+		T.topics = append(T.topics, topic)
 	}
 	T.messageQueue[topic].Enqueue(message)
 }
@@ -58,12 +60,7 @@ func (T *TopicManager) RemoveConnection(topic Topic, conn *websocket.Conn) {
 }
 
 func (T *TopicManager) GetTopics() []Topic {
-	topics := make([]Topic, 0)
-	for topic := range T.messageQueue {
-		topics = append(topics, topic)
-	}
-
-	return topics
+	return T.topics
 }
 
 func (T *TopicManager) GetNextConnection(topic Topic) (*websocket.Conn, error) {

@@ -10,8 +10,7 @@ import (
 
 func main() {
 	topicManager := internal.NewTopicManager()
-	queue := internal.NewLinkedListQueue[string]()
-	storage := internal.NewStorage(queue)
+	storage := internal.NewStorage(topicManager)
 	storage.Load()
 	defer internal.SaveOnPanic(storage)
 	go internal.HandleOsSignal(storage)
