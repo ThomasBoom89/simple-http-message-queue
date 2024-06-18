@@ -23,6 +23,8 @@ You can publish messages with http POST on /{topic}/publish message must be sent
 To receive messages you can http GET on /{topic}/subscribe or connect via websocket to /{topic}/ws
 On the websocket you need to send "next" in plaintext to get a new message
 
+You can use the gRPC endpoints to publish and subscribe to messages, see internal/grpc/messagebroker.proto
+
 ## License
 
 Simple Http Message Queue \

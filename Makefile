@@ -7,3 +7,6 @@ live:
 
 down:
 	docker compose -f compose.yml -f compose.development.yml down
+
+proto:
+	docker compose -f compose.development.yml up application-proto

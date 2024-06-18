@@ -33,3 +33,10 @@ services:
       - ./go.mod:/app/go.mod
       - ./go.sum:/app/go.sum
 
+  application-proto:
+    container_name: application-proto
+    command: sh -c "protoc grpc/*.proto --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --proto_path=."
+    build:
+      target: protobuf-grpc-build
+    volumes:
+      - ./internal/grpc:/app/grpc

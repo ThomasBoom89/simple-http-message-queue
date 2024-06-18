@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package grpc;
+
+option go_package = "internal/grpc";
+
+message SubscribeRequest{
+  string topic = 1;
+}
+
+message PublishRequest{
+  string topic = 1;
+  bytes message = 2;
+}
+
+message Response{
+  bytes message = 1;
+}
+
+message Empty{}
+
+service MessageBroker {
+  rpc Publish(PublishRequest) returns(Empty);
+  rpc Subscribe(SubscribeRequest) returns(Response);
+}

@@ -15,6 +15,7 @@ WORKDIR /app
 COPY --from=Builder /app/application /app
 
 EXPOSE 3000
+EXPOSE 3001
 
 CMD ["./application"]
 
@@ -26,3 +27,13 @@ RUN go install github.com/go-delve/delve/cmd/dlv@v1.22.1
 WORKDIR /app
 
 CMD ["air"]
+
+
+FROM golang:1.22-alpine3.19 AS protobuf-grpc-build
+
+WORKDIR /app
+
+RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.34.2
+RUN go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.4
+RUN apk update && apk add protobuf
+
