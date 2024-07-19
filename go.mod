@@ -3,7 +3,7 @@ module github.com/ThomasBoom89/simple-http-message-queue
 go 1.22
 
 require (
-	github.com/gofiber/contrib/websocket v1.3.1
+	github.com/gofiber/contrib/websocket v1.3.2
 	github.com/gofiber/fiber/v2 v2.52.5
 	google.golang.org/grpc v1.65.0
 	google.golang.org/protobuf v1.34.2
