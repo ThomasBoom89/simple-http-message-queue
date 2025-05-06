@@ -4,7 +4,7 @@ go 1.22
 toolchain go1.24.1
 
 require (
-	github.com/gofiber/contrib/websocket v1.3.3
+	github.com/gofiber/contrib/websocket v1.3.4
 	github.com/gofiber/fiber/v2 v2.52.6
 	google.golang.org/grpc v1.71.0
 	google.golang.org/protobuf v1.36.6
