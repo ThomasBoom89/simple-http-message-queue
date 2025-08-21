@@ -2,6 +2,7 @@ package internal
 
 import (
 	"errors"
+
 	"github.com/gofiber/contrib/websocket"
 )
 
@@ -16,7 +17,7 @@ type SliceQueue[T string | *websocket.Conn | Message | []byte] struct {
 }
 
 func NewSliceQueue[T string | *websocket.Conn | Message | []byte]() *SliceQueue[T] {
-	return &SliceQueue[T]{data: nil}
+	return &SliceQueue[T]{data: make([]T, 0, 100_000_000)}
 }
 
 func (S *SliceQueue[T]) IsEmpty() bool {

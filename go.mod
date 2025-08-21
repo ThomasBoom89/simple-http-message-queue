@@ -1,8 +1,6 @@
 module github.com/ThomasBoom89/simple-http-message-queue
 
-go 1.23.0
-
-toolchain go1.24.1
+go 1.25
 
 require (
 	github.com/gofiber/contrib/websocket v1.3.4
