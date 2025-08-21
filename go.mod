@@ -8,7 +8,7 @@ require (
 	github.com/gofiber/contrib/websocket v1.3.4
 	github.com/gofiber/fiber/v2 v2.52.9
 	google.golang.org/grpc v1.74.2
-	google.golang.org/protobuf v1.36.7
+	google.golang.org/protobuf v1.36.8
 )
 
 require (
